@@ -125,15 +125,19 @@ def dynamic_programming(trajectory, error_radius, cell_width):
         quality_set_list.append(quality_candidates(candidate_set, trajectory[j-1], trajectory[j], trajectory[j+1]))
         j = j + 1
 
-    F = 0 # for i = 0, p0', and p1'
-    trace = 0
+    F = [[] for j in range(len(trajectory)+2)] # make F a 3 dimensional 
+    trace = [0]*(len(trajectory)+1)
     for i in range(2,len(trajectory)+1):
         for candidate in quality_set_list[i]:
             for prev_candidate in quality_set_list[i-1]:
                 F = np.iinfo(im.dtype).max # machine limits for integer types, for floats do finfo
                 for before_candidate in quality_set_list[i-2]:
-                    l = 
-
+                    l = movement_score(trajectory[i-2], trajectory[i-1], trajectory[i], before_candidate, prev_candidate, candidate, quality_set_list[i-2], quality_set_list[i-1], quality_set_list[i])
+                    if F[i-1] + l < F[i]:
+                        F[i] = F[i-1] + l
+                        trace[i] = prev_candidate
+    # choom p'n in Cn, p'n+1 in Cn+1 with minimum F(n+1,pn',p'n+1)
+    
     return repaired_trajectory
 
 def load_data(data)

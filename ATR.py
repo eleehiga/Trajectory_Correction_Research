@@ -3,16 +3,16 @@ import numpy as np
 cell_width = 1 # set value later
 error_radius = 2 # set value later
 
-def make_candidate_set(point, error_radius):
+def make_candidate_set(point):
     # find the maximum values of a and b such that they are less then the error radius  
-    a_max = int(error_radius / (cell_width))
+    a_max = int(point[3] / (cell_width))
     size_set = int(np.pi * (error_radius/cell_width)^2) + 1 # figure out a better approximation later
     # use different values of a and b with like both being an integer between [-2,2]
     candidate_set = [[0 for i in range(3)] for j in range(size_set)]
     i = 0
     for j in list(-a_max, a_max+1):
         for k in list(-a_max, a_max+1):
-            if((i**2 + j**2)**0.5 <= error_radius):
+            if((i**2 + j**2)**0.5 <= point[3]):
                 if(i > candidate_set - 1):
                     break
                 candidate_set[i][0] = j + point[0]
@@ -66,6 +66,9 @@ def normalize_repair(point, candidate, prev_candidate_set, candidate_set, after_
         denominator = denominator + np.exp(point, now)
     return numerator / (len(prev_candidate_set) * len(after candidate_set) * denominator)
 
+def movement_score(prev_point, point, after_point, prev_candidate, candidate, after_candidate, prev_candidate_set, candidate_set, after_candidate_set):
+    return normalize_repair(point, candidate, prev_candidate_set, candidate_set, after_candidate_set) + normalize_travel(prev_candidate, candidate, prev_candidate_set, candidate_set, after_candidate_set) + normalize_speed(prev_candidate, candidate, after_candidate, prev_candidate_set, candidate_set, after_candidate_set) 
+
 def quality_repair(point, candidate, candidate_set):
     numerator = np.exp(distance(point, candidate))
     denominator = 0
@@ -110,8 +113,27 @@ def quality_candidates(candidate_set, prev_point, point, after_point):
     return quality_set
 
 def dynamic_programming(trajectory, error_radius, cell_width):
-    # in trajector index - is x, 1 is y, and 2 is time
-    
+    # in trajector index - is x, 1 is y, 2 is time, and 3 is the error radius
+    trajectory.append([0,0,len(trajectory)+1,error_radius]) 
+    trajctory.insert(0,[0,0,-1,error_radius])
+    candidate_set_list = []
+    for point in trajectory:
+        candidate_set_list.append(make_candidate_set(point))
+    quality_set_list = []
+    j = 1
+    for candidate_set in candidate_set_list:
+        quality_set_list.append(quality_candidates(candidate_set, trajectory[j-1], trajectory[j], trajectory[j+1]))
+        j = j + 1
+
+    F = 0 # for i = 0, p0', and p1'
+    trace = 0
+    for i in range(2,len(trajectory)+1):
+        for candidate in quality_set_list[i]:
+            for prev_candidate in quality_set_list[i-1]:
+                F = np.iinfo(im.dtype).max # machine limits for integer types, for floats do finfo
+                for before_candidate in quality_set_list[i-2]:
+                    l = 
+
     return repaired_trajectory
 
 def load_data(data)

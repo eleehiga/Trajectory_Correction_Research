@@ -125,28 +125,40 @@ def dynamic_programming(trajectory, error_radius, cell_width):
         quality_set_list.append(quality_candidates(candidate_set, trajectory[j-1], trajectory[j], trajectory[j+1]))
         j = j + 1
 
-    F = [[] for j in range(len(trajectory)+2)] # make F a 3 dimensional, so start with 1d then append to make it 3d
+    F = [[] for j in range(len(trajectory)+2)] # make F be 2 trellises
     for i in range(2, len(trajectory)+1):
             F[i].append([])
-            for k in range(len(quality_set_list[i-1]):
-                    F[i][j].append([])
-                    for l in range(len(quality_set_list[i-2]):
-                    F[i][j].append(0)
+            F[i].append([])
+            for k in range(len(quality_set_list[i-2])):
+                F[i][0].append([])
+                for l in range(len(quality_set_list[i-1])):
+                    F[i][0].append(0)
+            for k in range(len(quality_set_list[i-1])):
+                F[i][1].append([])
+                for l in range(len(quality_set_list[i])):
+                    F[i][1].append(0)
     # premake F
 
-    trace = [0]*(len(trajectory)+1)
+    trace = [[] for j in range(len(trajectory)+2)] # trace should be a 3d array
+    for i in range(2, len(trajectory)+1):
+        F[i].append([])
+        for j in range(len(quality_set_list[i-1])):
+            F[i].append([])
+            for k in range(len(quality_set_list[i])):
+                F[i][j].append(0);
+
     for i in range(2,len(trajectory)+1):
         j = 0
         for candidate in quality_set_list[i]:
             k = 0
             for prev_candidate in quality_set_list[i-1]:
-                F = np.iinfo(im.dtype).max # machine limits for integer types, for floats do finfo
+                F[i][1][k][j] = np.iinfo(im.dtype).max # machine limits for integer types, for floats do finfo
                 l = 0
                 for before_candidate in quality_set_list[i-2]:
                     l = movement_score(trajectory[i-2], trajectory[i-1], trajectory[i], before_candidate, prev_candidate, candidate, quality_set_list[i-2], quality_set_list[i-1], quality_set_list[i])
-                    if F[i-1][j][l] + l < F[i][:
-                        F[i] = F[i-1] + l
-                        trace[i] = prev_candidate
+                    if F[i-1][0][l][k] + l < F[i][1][k][j]:
+                        F[i][1][k][j] = F[i-1][0][l][k] + l
+                        trace[i][k][j] = prev_candidate
                     l = l + 1
                 k = k + 1
             j = j + 1

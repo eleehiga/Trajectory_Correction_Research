@@ -119,12 +119,14 @@ def dynamic_programming(trajectory, error_radius, cell_width):
     candidate_set_list = []
     for point in trajectory:
         candidate_set_list.append(make_candidate_set(point))
-    quality_set_list = []
-    j = 1
-    for candidate_set in candidate_set_list:
-        quality_set_list.append(quality_candidates(candidate_set, trajectory[j-1], trajectory[j], trajectory[j+1]))
-        j = j + 1
+    #quality_set_list = []
+    #j = 1
+    #for candidate_set in candidate_set_list:
+    #    quality_set_list.append(quality_candidates(candidate_set, trajectory[j-1], trajectory[j], trajectory[j+1]))
+    #    j = j + 1
+    quality_set_list = candidate_set_list
 
+    # below creates F(i-1, p'i-2, p'i) in index 0 and F(i, p'i-1, p'i) in index 1
     F = [[] for j in range(len(trajectory)+2)] # make F be 2 trellises
     for i in range(2, len(trajectory)+1):
             F[i].append([])
@@ -132,20 +134,20 @@ def dynamic_programming(trajectory, error_radius, cell_width):
             for k in range(len(quality_set_list[i-2])):
                 F[i][0].append([])
                 for l in range(len(quality_set_list[i-1])):
-                    F[i][0].append(0)
+                    F[i][0][k].append(0)
             for k in range(len(quality_set_list[i-1])):
                 F[i][1].append([])
                 for l in range(len(quality_set_list[i])):
-                    F[i][1].append(0)
+                    F[i][1][k].append(0)
     # premake F
 
+    # trace is trellis from p'i-1 to p'i. Values of traj and its index is stored
     trace = [[] for j in range(len(trajectory)+2)] # trace should be a 3d array
     for i in range(2, len(trajectory)+1):
-        F[i].append([])
         for j in range(len(quality_set_list[i-1])):
-            F[i].append([])
+            trace[i].append([])
             for k in range(len(quality_set_list[i])):
-                F[i][j].append(0);
+                trace[i][j].append([0])
 
     for i in range(2,len(trajectory)+1):
         j = 0
@@ -158,16 +160,39 @@ def dynamic_programming(trajectory, error_radius, cell_width):
                     l = movement_score(trajectory[i-2], trajectory[i-1], trajectory[i], before_candidate, prev_candidate, candidate, quality_set_list[i-2], quality_set_list[i-1], quality_set_list[i])
                     if F[i-1][0][l][k] + l < F[i][1][k][j]:
                         F[i][1][k][j] = F[i-1][0][l][k] + l
-                        trace[i][k][j] = prev_candidate
+                        trace[i][k][j] = l
                     l = l + 1
                 k = k + 1
             j = j + 1
     # choose p'n in Cn, p'n+1 in Cn+1 with minimum F(n+1,pn',p'n+1)
+    # Find the trajectory of F at at len(trajectory) + 1
+    min_pn = 0
+    min_pn1 = 0
+    min_Fn = np.iinfo(im.dtype).max
+    for j in range(0,len(F[1][len(trajectory+1])):
+        for k in range(0, len(F[1][len(trajectory+1)][j])):
+            if(F[1][len(trajectory+1)][j] < min_Fn):
+                min_pn = j
+                min_pn1 = k
+                min_Fn = F[1][len(trajectory+1)][j][k]
+
+    repaired_trajectory = [] # have to reverse it later as value will be put in reverse
+    repaired_trajectory.append(quality_set_list[len(trajectory)+1][min_pn1])
+    repaired_trajectory.append(quality_set_list[len(trajectory)][min_pn])
+    repaired_trajectory.append(quality_set_list[len(trajectory)][trace[len(trajectory)][min_pn][min_pn1]])
+    
+    trace_pi1 = trace[len(trajectory)][min_pn][min_pn1])
+    trace_pi = min_pn
+    for i in range(len(trajectory)-1, -1, -1):
+        pi2 = trace[i][trace_pi1][trace_pi]
+        repaired_trajectory.append(quality_set_list[len(trajectory)][pi2])
+    repaired_trajectory.reverse()
     
     return repaired_trajectory
 
 def load_data(data)
     # put the constant radius on the trajectory data in index 3
+    trajectory = [[j,j,j,1] for j in range(100)] # make F be 2 trellises
     return trajectory
 
 def main():

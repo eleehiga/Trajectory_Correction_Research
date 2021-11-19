@@ -143,11 +143,11 @@ def dynamic_programming(trajectory, error_radius, cell_width):
 
     # trace is trellis from p'i-1 to p'i. Values of traj and its index is stored
     trace = [[] for j in range(len(trajectory))] # trace should be a 3d array
-    for i in range(2, len(trajectory)):
+    for i in range(0, len(trajectory)):
         for j in range(len(quality_set_list[i-1])):
             trace[i].append([])
             for k in range(len(quality_set_list[i])):
-                trace[i][j].append([0])
+                trace[i][j].append(0)
 
     for i in range(2,len(trajectory)):
         j = 0
@@ -175,7 +175,7 @@ def dynamic_programming(trajectory, error_radius, cell_width):
             if(F[len(trajectory)-1][1][j][k] < min_Fn):
                 min_pn = j
                 min_pn1 = k
-                min_Fn = F[1][len(trajectory)-2][j][k]
+                min_Fn = F[len(trajectory)-1][1][j][k]
 
     repaired_trajectory = [] # have to reverse it later as value will be put in reverse
     repaired_trajectory.append(quality_set_list[len(trajectory)-1][min_pn1])
@@ -186,6 +186,7 @@ def dynamic_programming(trajectory, error_radius, cell_width):
     trace_pi = min_pn
     for i in range(len(trajectory)-4, -1, -1):
         pi2 = trace[i][trace_pi1][trace_pi]
+        print(pi2)
         repaired_trajectory.append(quality_set_list[i][pi2])
         # shift the shift pis down one
         trace_pi = trace_pi1
@@ -196,13 +197,15 @@ def dynamic_programming(trajectory, error_radius, cell_width):
 
 def load_data(data):
     # put the constant radius on the trajectory data in index 3
-    trajectory = [[j,j,j,1] for j in range(1)] # make F be 2 trellises
+    trajectory = [[j,j,j,1] for j in range(3)] # make F be 2 trellises
     return trajectory
 
 def main():
     trajectory = load_data('')
     repaired_trajectory = dynamic_programming(trajectory, error_radius, cell_width)
+    print(trajectory)
     print("ATR Processing")
+    print(repaired_trajectory)
 
 if __name__ == '__main__':
   main()

@@ -6,23 +6,23 @@ error_radius = 2 # set value later
 def make_candidate_set(point):
     # find the maximum values of a and b such that they are less then the error radius  
     a_max = int(point[3] / (cell_width))
-    size_set = int(np.pi * (error_radius/cell_width)^2) + 1 # figure out a better approximation later
+    size_set = int(np.pi * (error_radius/cell_width)**2) + 1 # figure out a better approximation later
     # use different values of a and b with like both being an integer between [-2,2]
     candidate_set = [[0 for i in range(3)] for j in range(size_set)]
     i = 0
-    for j in list(-a_max, a_max+1):
-        for k in list(-a_max, a_max+1):
-            if((i**2 + j**2)**0.5 <= point[3]):
-                if(i > candidate_set - 1):
-                    break
+    for j in range(-a_max, a_max+1):
+        for k in range(-a_max, a_max+1):
+            if((k**2 + j**2)**0.5 <= point[3]):
+                if(i > len(candidate_set) - 1):
+                    i = 0 # reset i
                 candidate_set[i][0] = j + point[0]
                 candidate_set[i][1] = k + point[1]
                 i = i + 1
-    for k in len(candidate_set):
-        candidate_set[k][2] = point[2]
+    for k in range(len(candidate_set)):
+        candidate_set[k][2] = point[2] # put the time in index 2 of the candidate set
     return candidate_set
 
-def distance(first point, second_point):
+def distance(first_point, second_point):
     return ((first_point[0] - second_point[0])**2 + (first_point[1] - second_point[1])**2)**0.5
                     
 
@@ -36,7 +36,7 @@ def travel_distance_tendency(prev_candidate, candidate):
     return distance(prev_candidate, candidate)
 
 def speed_of_point(first_point, second_point):
-    return distance(first_point, second_point)/(second_point[2] - second_point[2])
+    return distance(first_point, second_point)/(second_point[2] - first_point[2])
 
 def speed_change_tendency(prev_candidate, candidate, after_candidate):
     # calculate the speech change of candidate
@@ -63,8 +63,8 @@ def normalize_repair(point, candidate, prev_candidate_set, candidate_set, after_
     numerator = np.exp(repair_distance_tendency(point, candidate))
     denominator = 0
     for now in candidate_set:
-        denominator = denominator + np.exp(point, now)
-    return numerator / (len(prev_candidate_set) * len(after candidate_set) * denominator)
+        denominator = denominator + np.exp(repair_distance_tendency(point, now))
+    return numerator / (len(prev_candidate_set) * len(after_candidate_set) * denominator)
 
 def movement_score(prev_point, point, after_point, prev_candidate, candidate, after_candidate, prev_candidate_set, candidate_set, after_candidate_set):
     return normalize_repair(point, candidate, prev_candidate_set, candidate_set, after_candidate_set) + normalize_travel(prev_candidate, candidate, prev_candidate_set, candidate_set, after_candidate_set) + normalize_speed(prev_candidate, candidate, after_candidate, prev_candidate_set, candidate_set, after_candidate_set) 
@@ -96,7 +96,7 @@ def quality_candidates(candidate_set, prev_point, point, after_point):
     travel_candidates = []
     speed_candidates = []
     i = 0
-    for candidate in candidate_set
+    for candidate in candidate_set:
         if(quality_repair(point, candidate, candidate_set) <= quality_repair(point, point, candidate_set)):
             repair_candidates.append(i)
         if(quality_travel(prev_point, candidate, candidate_set) <= quality_travel(prev_point, point, candidate_set)):
@@ -114,8 +114,8 @@ def quality_candidates(candidate_set, prev_point, point, after_point):
 
 def dynamic_programming(trajectory, error_radius, cell_width):
     # in trajector index 0 is x, 1 is y, 2 is time, and 3 is the error radius
-    trajectory.append([0,0,len(trajectory)+1,error_radius]) 
-    trajctory.insert(0,[0,0,-1,error_radius])
+    trajectory.append([0,0,len(trajectory)+1,error_radius]) # maybe change the times later
+    trajectory.insert(0,[0,0,-1,error_radius])
     candidate_set_list = []
     for point in trajectory:
         candidate_set_list.append(make_candidate_set(point))
@@ -127,8 +127,8 @@ def dynamic_programming(trajectory, error_radius, cell_width):
     quality_set_list = candidate_set_list
 
     # below creates F(i-1, p'i-2, p'i) in index 0 and F(i, p'i-1, p'i) in index 1
-    F = [[] for j in range(len(trajectory)+2)] # make F be 2 trellises
-    for i in range(2, len(trajectory)+1):
+    F = [[] for j in range(len(trajectory))] # make F be 2 trellises
+    for i in range(0, len(trajectory)):
             F[i].append([])
             F[i].append([])
             for k in range(len(quality_set_list[i-2])):
@@ -142,62 +142,66 @@ def dynamic_programming(trajectory, error_radius, cell_width):
     # premake F
 
     # trace is trellis from p'i-1 to p'i. Values of traj and its index is stored
-    trace = [[] for j in range(len(trajectory)+2)] # trace should be a 3d array
-    for i in range(2, len(trajectory)+1):
+    trace = [[] for j in range(len(trajectory))] # trace should be a 3d array
+    for i in range(2, len(trajectory)):
         for j in range(len(quality_set_list[i-1])):
             trace[i].append([])
             for k in range(len(quality_set_list[i])):
                 trace[i][j].append([0])
 
-    for i in range(2,len(trajectory)+1):
+    for i in range(2,len(trajectory)):
         j = 0
         for candidate in quality_set_list[i]:
             k = 0
             for prev_candidate in quality_set_list[i-1]:
-                F[i][1][k][j] = np.iinfo(im.dtype).max # machine limits for integer types, for floats do finfo
-                l = 0
+                F[i][1][k][j] = np.iinfo(np.int32).max # machine limits for integer types, for floats do finfo
+                n = 0
                 for before_candidate in quality_set_list[i-2]:
                     l = movement_score(trajectory[i-2], trajectory[i-1], trajectory[i], before_candidate, prev_candidate, candidate, quality_set_list[i-2], quality_set_list[i-1], quality_set_list[i])
-                    if F[i-1][0][l][k] + l < F[i][1][k][j]:
-                        F[i][1][k][j] = F[i-1][0][l][k] + l
-                        trace[i][k][j] = l
-                    l = l + 1
+                    if F[i-1][0][n][k] + l < F[i][1][k][j]:
+                        F[i][1][k][j] = F[i-1][0][n][k] + l
+                        trace[i][k][j] = n
+                    print(i,j,k,n)
+                    n = n + 1
                 k = k + 1
             j = j + 1
     # choose p'n in Cn, p'n+1 in Cn+1 with minimum F(n+1,pn',p'n+1)
     # Find the trajectory of F at at len(trajectory) + 1
     min_pn = 0
     min_pn1 = 0
-    min_Fn = np.iinfo(im.dtype).max
-    for j in range(0,len(F[1][len(trajectory+1])):
-        for k in range(0, len(F[1][len(trajectory+1)][j])):
-            if(F[1][len(trajectory+1)][j] < min_Fn):
+    min_Fn = np.iinfo(np.int32).max
+    for j in range(0,len(F[len(trajectory)-1][1])):
+        for k in range(0, len(F[len(trajectory)-1][1][j])):
+            if(F[len(trajectory)-1][1][j][k] < min_Fn):
                 min_pn = j
                 min_pn1 = k
-                min_Fn = F[1][len(trajectory+1)][j][k]
+                min_Fn = F[1][len(trajectory)-2][j][k]
 
     repaired_trajectory = [] # have to reverse it later as value will be put in reverse
-    repaired_trajectory.append(quality_set_list[len(trajectory)+1][min_pn1])
-    repaired_trajectory.append(quality_set_list[len(trajectory)][min_pn])
-    repaired_trajectory.append(quality_set_list[len(trajectory)][trace[len(trajectory)][min_pn][min_pn1]])
+    repaired_trajectory.append(quality_set_list[len(trajectory)-1][min_pn1])
+    repaired_trajectory.append(quality_set_list[len(trajectory)-2][min_pn])
+    repaired_trajectory.append(quality_set_list[len(trajectory)-3][trace[len(trajectory)-1][min_pn][min_pn1]])
     
-    trace_pi1 = trace[len(trajectory)][min_pn][min_pn1])
+    trace_pi1 = trace[len(trajectory)-1][min_pn][min_pn1]
     trace_pi = min_pn
-    for i in range(len(trajectory)-1, -1, -1):
+    for i in range(len(trajectory)-4, -1, -1):
         pi2 = trace[i][trace_pi1][trace_pi]
-        repaired_trajectory.append(quality_set_list[len(trajectory)][pi2])
+        repaired_trajectory.append(quality_set_list[i][pi2])
+        # shift the shift pis down one
+        trace_pi = trace_pi1
+        trace_pi1 = pi2
     repaired_trajectory.reverse()
     
     return repaired_trajectory
 
-def load_data(data)
+def load_data(data):
     # put the constant radius on the trajectory data in index 3
-    trajectory = [[j,j,j,1] for j in range(100)] # make F be 2 trellises
+    trajectory = [[j,j,j,1] for j in range(1)] # make F be 2 trellises
     return trajectory
 
 def main():
     trajectory = load_data('')
-    dynamic_programing(trajectory, error_radius, cell_width)
+    repaired_trajectory = dynamic_programming(trajectory, error_radius, cell_width)
     print("ATR Processing")
 
 if __name__ == '__main__':

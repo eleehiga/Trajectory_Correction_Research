@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 cell_width = 1 # set value later
 error_radius = 2 # set value later
@@ -167,6 +168,7 @@ def dynamic_programming(trajectory, error_radius, cell_width):
             j = j + 1
     # choose p'n in Cn, p'n+1 in Cn+1 with minimum F(n+1,pn',p'n+1)
     # Find the trajectory of F at at len(trajectory) + 1
+    # At Fn is the culmination of all the Fs before
     min_pn = 0
     min_pn1 = 0
     min_Fn = np.iinfo(np.int32).max
@@ -196,13 +198,39 @@ def dynamic_programming(trajectory, error_radius, cell_width):
     return repaired_trajectory
 
 def load_data(data):
+    return 0
+
+def load_test(): # make sine wave
     # put the constant radius on the trajectory data in index 3
-    trajectory = [[j,j,j,1] for j in range(3)] # make F be 2 trellises
-    return trajectory
+    # trajectory = [[j,j,j,1] for j in range(40)] # make F be 2 trellises
+        # above makes a straight line trajectory
+    x = lambda t : 0.0005*(t-1)*(t-100)*(t+100)
+    y = lambda t : 2*t
+    arr_x = []
+    arr_y = []
+    trajectory = []
+    for t in range(100):
+        arr_x.append(x(t))
+        arr_y.append(y(t))
+        trajectory.append([x(t), y(t), t, 1])
+    return arr_x, arr_y, trajectory
+
+def extract_xy(trajectory):
+    arr_x = []
+    arr_y = []
+    for t in range(100):
+        arr_x.append(trajectory[t][0])
+        arr_y.append(trajectory[t][1])
+    return arr_x, arr_y
 
 def main():
-    trajectory = load_data('')
+    trajectory, before_x, before_y = load_test()
     repaired_trajectory = dynamic_programming(trajectory, error_radius, cell_width)
+    after_x, after_y = extract_xy(trajectory)
+
+    plt.plot(before_x, before_y)
+    plt.plot(after_x, after_y)
+    plt.show()
     print(trajectory)
     print("ATR Processing")
     print(repaired_trajectory)

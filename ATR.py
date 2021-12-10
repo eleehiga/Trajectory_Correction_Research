@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 
 cell_width = 1 # set value later
 error_radius = 2 # set value later
+trajectory_length = 1
 
 def make_candidate_set(point):
     # find the maximum values of a and b such that they are less then the error radius  
@@ -37,6 +38,8 @@ def travel_distance_tendency(prev_candidate, candidate):
     return distance(prev_candidate, candidate)
 
 def speed_of_point(first_point, second_point):
+    if(second_point[2] - first_point[2] == 0):
+        return np.iinfo(np.int32).max
     return distance(first_point, second_point)/(second_point[2] - first_point[2])
 
 def speed_change_tendency(prev_candidate, candidate, after_candidate):
@@ -74,7 +77,7 @@ def quality_repair(point, candidate, candidate_set):
     numerator = np.exp(distance(point, candidate))
     denominator = 0
     for now in candidate_set:
-        denominator = denominator + np.exp(distane(point, now))
+        denominator = denominator + np.exp(distance(point, now))
     return numerator / denominator
 
 def quality_travel(prev_point, candidate, candidate_set):
@@ -120,12 +123,16 @@ def dynamic_programming(trajectory, error_radius, cell_width):
     candidate_set_list = []
     for point in trajectory:
         candidate_set_list.append(make_candidate_set(point))
-    #quality_set_list = []
-    #j = 1
-    #for candidate_set in candidate_set_list:
-    #    quality_set_list.append(quality_candidates(candidate_set, trajectory[j-1], trajectory[j], trajectory[j+1]))
-    #    j = j + 1
-    quality_set_list = candidate_set_list
+    quality_set_list = []
+    j = 1
+    for candidate_set in candidate_set_list:
+        print(j)
+        if(j > len(trajectory) - 1):
+            break
+        quality_set_list.append(quality_candidates(candidate_set, trajectory[j-1], trajectory[j], trajectory[j+1]))
+        j = j + 1
+    print(len(quality_set_list))
+    #quality_set_list = candidate_set_list
 
     # below creates F(i-1, p'i-2, p'i) in index 0 and F(i, p'i-1, p'i) in index 1
     F = [[] for j in range(len(trajectory))] # make F be 2 trellises
@@ -144,7 +151,7 @@ def dynamic_programming(trajectory, error_radius, cell_width):
 
     # trace is trellis from p'i-1 to p'i. Values of traj and its index is stored
     trace = [[] for j in range(len(trajectory))] # trace should be a 3d array
-    for i in range(0, len(trajectory)):
+    for i in range(1, len(trajectory)):
         for j in range(len(quality_set_list[i-1])):
             trace[i].append([])
             for k in range(len(quality_set_list[i])):
@@ -165,7 +172,7 @@ def dynamic_programming(trajectory, error_radius, cell_width):
                     print(i,j,k,n)
                     n = n + 1
                 k = k + 1
-            j = j + 1
+            j = j + 1fff
     # choose p'n in Cn, p'n+1 in Cn+1 with minimum F(n+1,pn',p'n+1)
     # Find the trajectory of F at at len(trajectory) + 1
     # At Fn is the culmination of all the Fs before
@@ -209,16 +216,16 @@ def load_test(): # make sine wave
     arr_x = []
     arr_y = []
     trajectory = []
-    for t in range(100):
+    for t in range(trajectory_length):
         arr_x.append(x(t))
         arr_y.append(y(t))
         trajectory.append([x(t), y(t), t, 1])
-    return arr_x, arr_y, trajectory
+    return trajectory, arr_x, arr_y
 
 def extract_xy(trajectory):
     arr_x = []
     arr_y = []
-    for t in range(100):
+    for t in range(len(trajectory)):
         arr_x.append(trajectory[t][0])
         arr_y.append(trajectory[t][1])
     return arr_x, arr_y

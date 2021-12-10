@@ -127,7 +127,10 @@ def dynamic_programming(trajectory, error_radius, cell_width):
     j = 1
     for candidate_set in candidate_set_list:
         print(j)
-        if(j > len(trajectory) - 1):
+        if(j <= 0):
+            quality_set_list.append(candidate_set);   
+        elif(j > len(trajectory) - 1):
+            quality_set_list.append(candidate_set);   
             break
         quality_set_list.append(quality_candidates(candidate_set, trajectory[j-1], trajectory[j], trajectory[j+1]))
         j = j + 1
@@ -172,7 +175,7 @@ def dynamic_programming(trajectory, error_radius, cell_width):
                     print(i,j,k,n)
                     n = n + 1
                 k = k + 1
-            j = j + 1fff
+            j = j + 1
     # choose p'n in Cn, p'n+1 in Cn+1 with minimum F(n+1,pn',p'n+1)
     # Find the trajectory of F at at len(trajectory) + 1
     # At Fn is the culmination of all the Fs before

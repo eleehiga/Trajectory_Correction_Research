@@ -4,7 +4,7 @@ import random
 
 cell_width = 1 # set value later
 error_radius = 2 # set value later
-trajectory_length = 50
+trajectory_length = 10
 
 def make_candidate_set(point):
     # find the maximum values of a and b such that they are less then the error radius  
@@ -274,11 +274,15 @@ def load_test(): # make sine wave
         arr_x.append(x(t))
         arr_y.append(y(t))
         trajectory.append([x(t), y(t), t, 1])
-    for t in range(10, 30, 5):
-        arr_x[t] = random.randrange(-1,1) + arr_x[t]
-        arr_y[t] = random.randrange(-1,1) + arr_y[t]
-        trajectory[t][0] = arr_x[t]
-        trajectory[t][1] = arr_y[t]
+    #for t in range(10, 30, 5):
+    #    arr_x[t] = random.randrange(-3,3) + arr_x[t]
+    #    arr_y[t] = random.randrange(-3,3) + arr_y[t]
+    #    trajectory[t][0] = arr_x[t]
+    #    trajectory[t][1] = arr_y[t]
+    arr_x[4] = random.randrange(-1,1) + arr_x[4]
+    arr_y[4] = random.randrange(-1,1) + arr_y[4]
+    trajectory[4][0] = arr_x[4]
+    trajectory[4][1] = arr_y[4]
     return trajectory, arr_x, arr_y
 
 def extract_xy(trajectory):
@@ -290,12 +294,15 @@ def extract_xy(trajectory):
     return arr_x, arr_y
 
 def main():
-    trajectory, before_x, before_y = load_test()
+    trajectory, arr_x, arr_y = load_test()
     repaired_trajectory = dynamic_programming(trajectory, error_radius, cell_width)
+    before_x, before_y = extract_xy(trajectory)
     after_x, after_y = extract_xy(repaired_trajectory)
 
-    plt.plot(after_x, after_y, label = "line 2")
-    plt.plot(before_x, before_y, label = "line 1")
+    plt.figure(1)
+    plt.scatter(after_x, after_y, label = "line 2")
+    plt.figure(2)
+    plt.scatter(before_x, before_y, label = "line 1")
     plt.legend()
     plt.show()
     print(trajectory)

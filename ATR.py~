@@ -294,8 +294,9 @@ def extract_xy(trajectory):
     return arr_x, arr_y
 
 def main():
-    trajectory, before_x, before_y = load_test()
+    trajectory, arr_x, arr_y = load_test()
     repaired_trajectory = dynamic_programming(trajectory, error_radius, cell_width)
+    before_x, before_y = extract_xy(trajectory)
     after_x, after_y = extract_xy(repaired_trajectory)
 
     plt.figure(1)

@@ -279,10 +279,12 @@ def load_test(): # make sine wave
     #    arr_y[t] = random.randrange(-3,3) + arr_y[t]
     #    trajectory[t][0] = arr_x[t]
     #    trajectory[t][1] = arr_y[t]
-    arr_x[4] = random.randrange(-1,1) + arr_x[4]
-    arr_y[4] = random.randrange(-1,1) + arr_y[4]
-    trajectory[4][0] = arr_x[4]
-    trajectory[4][1] = arr_y[4]
+    #arr_x[4] = random.randrange(-1,1) + arr_x[4]
+    #arr_y[4] = random.randrange(-1,1) + arr_y[4]
+    #trajectory[4][0] = arr_x[4]
+    #trajectory[4][1] = arr_y[4]
+    trajectory[4][0] = random.randrange(-2,2) + trajectory[4][0] 
+    trajectory[4][1] = random.randrange(-2,2) + trajectory[4][1]
     return trajectory, arr_x, arr_y
 
 def extract_xy(trajectory):
@@ -300,9 +302,13 @@ def main():
     after_x, after_y = extract_xy(repaired_trajectory)
 
     plt.figure(1)
-    plt.scatter(after_x, after_y, label = "line 2")
+    plt.scatter(arr_x, arr_y, label = "Ground Truth")
+    plt.legend()
     plt.figure(2)
-    plt.scatter(before_x, before_y, label = "line 1")
+    plt.scatter(before_x, before_y, label = "Noisy Version")
+    plt.legend()
+    plt.figure(3)
+    plt.scatter(after_x, after_y, label = "Corrected Version")
     plt.legend()
     plt.show()
     print(trajectory)

@@ -135,7 +135,7 @@ def dynamic_programming(trajectory, error_radius, cell_width):
         else:
             quality_set_list.append(quality_candidates(candidate_set, trajectory[j-1], trajectory[j], trajectory[j+1]))
         j = j + 1
-    #quality_set_list = candidate_set_list
+    #quality_set_list = candidate_set_list # without quality selection
 
     # trace is trellis from p'i-1 to p'i. Values of F and its index is stored
     F = [[] for j in range(len(trajectory))] # make F be 2 trellises
@@ -166,7 +166,7 @@ def dynamic_programming(trajectory, error_radius, cell_width):
                     if F[i-1][n][k] + l < F[i][k][j]:
                         F[i][k][j] = F[i-1][n][k] + l
                         trace[i][k][j] = n
-                    #print(i,j,k,n)
+                    print(i,j,k,n, F[i-1][n][k] + l)
                     n = n + 1
                 k = k + 1
             j = j + 1

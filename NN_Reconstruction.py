@@ -9,25 +9,29 @@ from numpy import array
 
 # construct LSTM neural network
 def apply_nn(trajectory):
-    start_predict = len(trajectory) # start predicting there there are None in data
+    start_predict = [] # start predicting there there are None in data
+    end_predict = []
     for i in range(len(trajectory)):
-        if(trajectory[i][0] is None):
-            start_predict = i
-            break
-    end_predict = len(trajectory)
-    for i in range(start_predict,len(trajectory)): # end predicting when not None anymore
-        if(not(trajectory[i][0] is None)):
-            end_predict = i
-            break
-    # scale data between 0 and 1
-    cut_traj = trajectory[0:start_predict] # trajectory before predicting to use as training
+        if(trajectory[i][0] is None and len(start_predict) == len(end_predict)):
+            start_predict.append(i) # if the trajectory is none and start and end array length the same
+        elif(not(trajectory[i][0] is None) and len(start_predict) > len(end_predict)):
+            end_predict.append(i) # will add to the end of the prediction array with it encountering non none points and more start than end for array length
     scaler=MinMaxScaler(feature_range=(0,1)) # will scale data between 0 and 1
-    scaled_traj = scaler.fit_transform(np.array(cut_traj).reshape(-1,2)) 
+    scaled_traj = [] # make an array with each bucket as a slice of the trajectory
+    if(not(trajectory[0][0] is None)):
+        cut_traj = trajectory[0:start_predict[0]]
+        scaled_traj.append(scaler.fit_transform(np.array(cut_traj).reshape(-1,2)))
+    for j in range(len(start_predict)-1):
+        cut_traj = trajectory[end_predict[j]:start_predict[j+1]]
+        scaled_traj.append(scaler.fit_transform(np.array(cut_traj).reshape(-1,2)))
+    if(not(trajectory[len(trajectory)-1][0] is None)):
+        cur_traj = trajectory[end_predict[len(end_predict)-1]:len(trajectory)]
+        scaled_traj.append(scaler.fit_transform(np.array(cut_traj).reshape(-1,2)))
+    # scale data between 0 and 1
     # make all X_train because just use that to predict points
-    train_data = scaled_traj
 
     time_step=5 # how many points previously to use to predict
-    X_train, y_train = create_dataset(train_data, time_step)
+    X_train, y_train = create_dataset(scaled_traj, time_step)
 
     # reshape input to be [samples, time steps, features] which is required for LSTM
     units = 3 # for nodes in network
@@ -49,8 +53,8 @@ def apply_nn(trajectory):
 
     model.fit(X_train,
           y_train,
-          epochs=5000
-          ) 
+          epochs=1000
+          ) # epochs=5000 is the best
 
     x_input = train_data[train_data.shape[0]-time_step:] # last time_step points
     temp_input = list(x_input)
@@ -95,10 +99,16 @@ def load_test():
 
 def create_dataset(dataset, time_step=1):
     dataX, dataY = [], []
-    for i in range(len(dataset)-time_step-1):
-        a = dataset[i:(i+time_step)]   ###i=0, 0,1,2,3-----99   100 
-        dataX.append(a)
-        dataY.append(dataset[i + time_step])
+    for i in range(len(dataset)):
+        for j in range(len(dataset[i])-time_step-1):
+            a = dataset[i][j:(j+time_step)]   ###i=0, 0,1,2,3-----99   100 
+            dataX.append(a)
+            dataY.append(dataset[i][j + time_step])
+        row = np.flipud(dataset[i])
+        for j in range(len(dataset[i])-time_step-1):
+            a = row[j:(j+time_step)]   ###i=0, 0,1,2,3-----99   100 
+            dataX.append(a)
+            dataY.append(row[j + time_step])
     return np.array(dataX), np.array(dataY)
 
 def extract_xy(trajectory):

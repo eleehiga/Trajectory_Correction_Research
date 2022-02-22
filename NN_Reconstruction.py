@@ -53,12 +53,13 @@ def apply_nn(trajectory):
 
     model.fit(X_train,
           y_train,
-          epochs=200
+          epochs=5000
           ) # epochs=5000 is the best
 
-    x_input = scaled_traj[0][scaled_traj[0].shape[0]-time_step:] # last time_step points
+    x_input = scaled_traj[0][scaled_traj[0].shape[0]-time_step:] # before first gap, last time_step points
     temp_input = list(x_input)
     corrected_traj = trajectory # will replace null points
+    
     for j in range(len(start_predict)):
         i = 0
         while(i < end_predict[j] - start_predict[j]):
@@ -68,34 +69,58 @@ def apply_nn(trajectory):
                 yhat = model.predict(x_input, verbose=0)
                 temp_input.extend(yhat.tolist()) # append to the end
                 temp_input=temp_input[1:]
-                corrected_traj[start_predict[j] + i] = scaler.inverse_transform(yhat).tolist()[0] * (1 - i/(end_predict[j] - start_predict[j]))
+                #corrected_traj[start_predict[j] + i] = scaler.inverse_transform(yhat).tolist()[0] * (1 - i/(end_predict[j] - start_predict[j]))
+                corrected_traj[start_predict[j] + i] = [scaler.inverse_transform(yhat)[0][0] * (1 - i/(end_predict[j] - start_predict[j])), scaler.inverse_transform(yhat)[0][1] * (1 - i/(end_predict[j] - start_predict[j]))]
                 i=i+1
             else: # when len is time_step predict one more and add that on to the temp_input list
                 x_input = x_input.reshape((1, time_step, 2))
                 yhat = model.predict(x_input, verbose=0)
                 temp_input.extend(yhat.tolist())
-                corrected_traj[start_predict[j] + i] = scaler.inverse_transform(yhat).tolist()[0] * (1 - i/(end_predict[j] - start_predict[j]))
+                #corrected_traj[start_predict[j] + i] = scaler.inverse_transform(yhat).tolist()[0] * (1 - i/(end_predict[j] - start_predict[j]))
+                corrected_traj[start_predict[j] + i] = [scaler.inverse_transform(yhat)[0][0] * (1 - i/(end_predict[j] - start_predict[j])), scaler.inverse_transform(yhat)[0][1] * (1 - i/(end_predict[j] - start_predict[j]))]
                 i=i+1
-    # reverse the trediction
-    '''
-    for j in range(len(start_predict)):
-        i = end_predict[j] - start_predict[j]
-        while(i >= 0):
+
+    # reverse the prediction
+    x_input = np.flipud(scaled_traj[1][0:time_step]) # after first gap, first time_step points, will reverse the python list
+    temp_input = list(x_input)
+    for j in range(1, len(start_predict)):
+        i = end_predict[j-1]
+        while(i >= start_predict[j-1]):
             if(len(temp_input)>time_step): # will always be time_step + 1
                 x_input=np.array(temp_input[1:]) # will remove one so its amount is still time_step
                 x_input = x_input.reshape((1, time_step, 2))
                 yhat = model.predict(x_input, verbose=0)
                 temp_input.extend(yhat.tolist()) # append to the end
                 temp_input=temp_input[1:]
-                corrected_traj[start_predict[j] + i] = scaler.inverse_transform(yhat).tolist()[0] * (1 - i/(end_predict[j] - start_predict[j]))
+                corrected_traj[i] = [scaler.inverse_transform(yhat)[0][0] * (1 + i/(end_predict[j-1] - start_predict[j-1])), scaler.inverse_transform(yhat)[0][1] * (1 + i/(end_predict[j-1] - start_predict[j-1]))]
                 i=i-1
             else: # when len is time_step predict one more and add that on to the temp_input list
                 x_input = x_input.reshape((1, time_step, 2))
                 yhat = model.predict(x_input, verbose=0)
                 temp_input.extend(yhat.tolist())
-                corrected_traj[start_predict[j] + i] = scaler.inverse_transform(yhat).tolist()[0] * (1 - i/(end_predict[j] - start_predict[j]))
+                corrected_traj[i] = [scaler.inverse_transform(yhat)[0][0] * (1 + i/(end_predict[j-1] - start_predict[j-1])), scaler.inverse_transform(yhat)[0][1] * (1 + i/(end_predict[j-1] - start_predict[j-1]))]
                 i=i-1
+    
+    ''' # old way of fitting the curve
+    for j in range(len(start_predict)):
+        i = 0
+        while(i < end_predict[j] - start_predict[j]):
+            if(len(temp_input)>time_step): # will always be time_step + 1
+                x_input=np.array(temp_input[1:]) # will remove one so its amount is still time_step
+                x_input = x_input.reshape((1, time_step, 2))
+                yhat = model.predict(x_input, verbose=0)
+                temp_input.extend(yhat.tolist()) # append to the end
+                temp_input=temp_input[1:]
+                corrected_traj[start_predict[j] + i] = scaler.inverse_transform(yhat).tolist()[0] 
+                i=i+1
+            else: # when len is time_step predict one more and add that on to the temp_input list
+                x_input = x_input.reshape((1, time_step, 2))
+                yhat = model.predict(x_input, verbose=0)
+                temp_input.extend(yhat.tolist())
+                corrected_traj[start_predict[j] + i] = scaler.inverse_transform(yhat).tolist()[0] 
+                i=i+1
     '''
+
     return corrected_traj
 
 

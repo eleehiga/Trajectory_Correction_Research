@@ -63,38 +63,43 @@ def apply_nn(trajectory):
           epochs=5000
           ) # epochs=5000 is the best
             # 500 is ok
-    '''
+    
     x_input = scaled_traj[0][scaled_traj[0].shape[0]-time_step:] # before first gap, last time_step points
     temp_input = list(x_input)
-    ''' 
+     
     corrected_traj = trajectory # will replace null points
-    '''
+    
     for j in range(len(start_predict)):
         i = 0
-        while(i < end_predict[j] - start_predict[j]):
+        while(i <= end_predict[j] - start_predict[j]): # go till i <= because then can get scale 0 to use
             if(len(temp_input)>time_step): # will always be time_step + 1
                 x_input=np.array(temp_input[1:]) # will remove one so its amount is still time_step
                 x_input = x_input.reshape((1, time_step, 2))
                 yhat = model.predict(x_input, verbose=0)
                 temp_input.extend(yhat.tolist()) # append to the end
                 temp_input=temp_input[1:]
-                corrected_traj[start_predict[j] + i] = inv_scale_arr([yhat[0][0] * (1 - i/(end_predict[j] - start_predict[j])), yhat[0][1] * (1 - i/(end_predict[j] - start_predict[j]))], min_x, max_x, min_y, max_y)[0]
+                corrected_traj[start_predict[j] + i] = [yhat[0][0] * (1 - i/(end_predict[j] - start_predict[j])), yhat[0][1] * (1 - i/(end_predict[j] - start_predict[j]))]
+                print(corrected_traj[start_predict[j] + i])
+                print('scale')
+                print(1 - i/(end_predict[j] - start_predict[j]))
                 i=i+1
             else: # when len is time_step predict one more and add that on to the temp_input list
                 x_input = x_input.reshape((1, time_step, 2))
                 yhat = model.predict(x_input, verbose=0)
                 temp_input.extend(yhat.tolist())
-                corrected_traj[start_predict[j] + i] = inv_scale_arr([yhat[0][0] * (1 - i/(end_predict[j] - start_predict[j])), yhat[0][1] * (1 - i/(end_predict[j] - start_predict[j]))], min_x, max_x, min_y, max_y)[0]
+                corrected_traj[start_predict[j] + i] = [yhat[0][0] * (1 - i/(end_predict[j] - start_predict[j])), yhat[0][1] * (1 - i/(end_predict[j] - start_predict[j]))]
+                print('scale')
+                print(1 - i/(end_predict[j] - start_predict[j]))
                 i=i+1
-    '''
+    
     # reverse the prediction
     x_input = np.flipud(scaled_traj[1][0:time_step]) # after first gap, first time_step points, will reverse the python list
     temp_input = list(x_input)
-    print('x_input: ')
-    print(temp_input)
-    print('reverse input: ')
-    print(inv_scale_arr(np.flipud(x_input), min_x, max_x, min_y, max_y)) #TODO remove later
-    '''
+    #print('x_input: ')
+    #print(temp_input)
+    print('----reverse input: ')
+    #print(inv_scale_arr(x_input, min_x, max_x, min_y, max_y)) #TODO remove later
+    
     for j in range(len(start_predict)):
         i = end_predict[j]
         while(i >= start_predict[j]):
@@ -104,15 +109,31 @@ def apply_nn(trajectory):
                 yhat = model.predict(x_input, verbose=0)
                 temp_input.extend(yhat.tolist()) # append to the end
                 temp_input=temp_input[1:]
-                corrected_traj[i] = inv_scale_arr([yhat[0][0] * (i - start_predict[j]/(end_predict[j] - start_predict[j])), yhat[0][1] * (i - start_predict[j]/(end_predict[j] - start_predict[j]))], min_x, max_x, min_y, max_y)[0]
+                print('corrected_traj[i]')
+                print(corrected_traj[i])
+                corrected_traj[i] = inv_scale_arr([[yhat[0][0] * (i - start_predict[j])/(end_predict[j] - start_predict[j]) + corrected_traj[i][0], yhat[0][1] * (i - start_predict[j])/(end_predict[j] - start_predict[j])+ corrected_traj[i][1]]], min_x, max_x, min_y, max_y)[0]
+                print('corrected_traj[i]')
+                print(corrected_traj[i])
+                print('scale')
+                print((i - start_predict[j])/(end_predict[j] - start_predict[j]))
+                print('yhat')
+                print(inv_scale_arr(yhat, min_x, max_x, min_y, max_y))
                 i=i-1
             else: # when len is time_step predict one more and add that on to the temp_input list
                 x_input = x_input.reshape((1, time_step, 2))
                 yhat = model.predict(x_input, verbose=0)
                 temp_input.extend(yhat.tolist())
-                corrected_traj[i] = inv_scale_arr([yhat[0][0] * (i - start_predict[j]/(end_predict[j] - start_predict[j])), yhat[0][1] * (i - start_predict[j]/(end_predict[j] - start_predict[j]))], min_x, max_x, min_y, max_y)[0]
+                print('corrected_traj[i]')
+                print(corrected_traj[i])
+                corrected_traj[i] = inv_scale_arr([[yhat[0][0] * (i - start_predict[j])/(end_predict[j] - start_predict[j]) + corrected_traj[i][0], yhat[0][1] * (i - start_predict[j])/(end_predict[j] - start_predict[j])+ corrected_traj[i][1]]], min_x, max_x, min_y, max_y)[0]
+                print('corrected_traj[i]')
+                print(corrected_traj[i])
+                print('scale')
+                print((i - start_predict[j])/(end_predict[j] - start_predict[j]))
+                print('yhat')
+                print(inv_scale_arr(yhat, min_x, max_x, min_y, max_y))
                 i=i-1
-    '''
+    
     '''# old way of fitting the curve
     for j in range(len(start_predict)):
         i = 0
@@ -132,7 +153,7 @@ def apply_nn(trajectory):
                 corrected_traj[start_predict[j] + i] = scaler.inverse_transform(yhat).tolist()[0] 
                 i=i+1
     '''# old way but reversed
-
+    '''
     for j in range(len(start_predict)):
         i = end_predict[j]
         while(i >= start_predict[j]):
@@ -154,7 +175,7 @@ def apply_nn(trajectory):
                 temp_input.extend(yhat.tolist())
                 corrected_traj[i] = inv_scale_arr(yhat, min_x, max_x, min_y, max_y)[0]
                 i=i-1
-    
+    '''
     return corrected_traj
 # reconstruction
     # take in points to train NN and then output for missing points
@@ -206,7 +227,7 @@ def load_test():
             trajectory.append([None, None])
         else:
             trajectory.append([x(t), y(t)])
-    print(trajectory)
+    #print(trajectory)
     return trajectory
 
 def create_dataset(dataset, time_step=1):

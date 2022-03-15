@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 from numpy import array
+import scipy as sp
+from scipy.interpolate import interp1d
 
 # construct LSTM neural network
 def apply_nn(trajectory):
@@ -55,14 +57,14 @@ def apply_nn(trajectory):
           y_train,
           epochs=2500
           ) # epochs=5000 is the best
+            # 2500 is ok also
             # 500 is ok
     
-    x_input = scaled_traj[0][scaled_traj[0].shape[0]-time_step:] # before first gap, last time_step points
-    temp_input = list(x_input)
-     
     corrected_traj = trajectory # will replace null points
     
     for j in range(len(start_predict)):
+        x_input = scaled_traj[j][scaled_traj[j].shape[0]-time_step:] # before first gap, last time_step points
+        temp_input = list(x_input)
         i = 0
         while(i <= end_predict[j] - start_predict[j]): # go till i <= because then can get scale 0 to use
             if(len(temp_input)>time_step): # will always be time_step + 1
@@ -80,11 +82,11 @@ def apply_nn(trajectory):
                 corrected_traj[start_predict[j] + i] = [yhat[0][0] * (1 - i/(end_predict[j] - start_predict[j])), yhat[0][1] * (1 - i/(end_predict[j] - start_predict[j]))]
                 i=i+1
     
-    # reverse the prediction
-    x_input = np.flipud(scaled_traj[1][0:time_step]) # after first gap, first time_step points, will reverse the python list
-    temp_input = list(x_input)
-    
     for j in range(len(start_predict)):
+        # reverse the prediction
+        # for every start and end predict value there are two scaled traj
+        x_input = np.flipud(scaled_traj[j+1][0:time_step]) # after first gap, first time_step points, will reverse the python list
+        temp_input = list(x_input)
         i = end_predict[j]
         while(i >= start_predict[j]):
             if(len(temp_input)>time_step): # will always be time_step + 1
@@ -182,21 +184,46 @@ def inv_scale_arr(array, min_x, max_x, min_y, max_y):
     return np.array(new_arr)
 
 def load_test(): 
+    del_start = [40,80,140, 200, 300, 400, 450] # where to delete points
+    del_end = [50,90,160, 220,350, 410, 460]
+    '''
     trajectory_length = 100
-    del_start = 80 # where to delete points
-    del_end = 90
     # make a sine wave trajectory with holes, assuming data taken at even time variables
     # holes will have null with them
     x = lambda t : 0.0005*(t-1)*(t-100)*(t+100)
     y = lambda t : 2*t
     trajectory = []
+    '''
+    # making spline
+    x1 = [10, 100, 200, 310, 400, 500, 300, 0]
+    y1 = [90, 300, 100, 0, 110, 200, 400, 500]
+
+    new_length = 500
+    new_x = np.linspace(min(x1), max(x1), new_length)
+    new_y = sp.interpolate.interp1d(x1, y1, kind='cubic')(new_x)
+    points = list(zip(new_x, new_y))
+    trajectory = [list(item) for item in points]
+    perf_traj = trajectory.copy()
+    for t in range(len(del_start)):
+        for i in range(del_start[t], del_end[t]):
+            trajectory[i] = [None,None]
+
+    ''' # for the 100 length trajectory
     for t in range(trajectory_length):
         if(t > del_start and t < del_end):
             trajectory.append([None, None])
         else:
             trajectory.append([x(t), y(t)])
+    '''
     #print(trajectory)
-    return trajectory
+    return trajectory, perf_traj
+
+def get_rms(perf_traj, corrected_traj):
+    rms = 0
+    # loop will sum
+    for i in range(len(perf_traj)):
+        rms = np.sqrt((corrected_traj[i][0] - perf_traj[i][0])**2 + (corrected_traj[i][1] - perf_traj[i][1])**2) + rms
+    return np.sqrt(rms / len(perf_traj))
 
 def create_dataset(dataset, time_step=1):
     dataX, dataY = [], []
@@ -222,9 +249,11 @@ def extract_xy(trajectory):
 
 def main():
     print('NN Reconstruction')
-    trajectory = load_test()
+    trajectory, perf_traj = load_test()
     corrected_traj = apply_nn(trajectory)
     arr_x,arr_y = extract_xy(corrected_traj)
+    print('rms:')
+    print(get_rms(perf_traj, corrected_traj))
     plt.scatter(arr_x, arr_y)
     plt.show()
 

@@ -32,11 +32,11 @@ def apply_nn(trajectory):
     # scale data between 0 and 1
     # make all X_train because just use that to predict points
 
-    time_step=5 # how many points previously to use to predict
+    time_step=10 # how many points previously to use to predict
     X_train, y_train = create_dataset(scaled_traj, time_step)
 
     # reshape input to be [samples, time steps, features] which is required for LSTM
-    units = 3 # for nodes in network
+    units = 3 # before 3 # for nodes in network
     model = Sequential()
     model.add(LSTM(units, input_shape=(time_step,2), return_sequences=True)) # no activation as we are not returning a binary value
     model.add(LSTM(units, return_sequences=True))
@@ -55,13 +55,13 @@ def apply_nn(trajectory):
 
     model.fit(X_train,
           y_train,
-          epochs=2500
-          ) # epochs=5000 is the best
-            # 2500 is ok also
+          epochs=5000
+          ) # epochs=5000 is the best for forward only
+            # 2500 is best for forward and backward
             # 500 is ok
     
     corrected_traj = trajectory # will replace null points
-    
+    ''' 
     for j in range(len(start_predict)):
         x_input = scaled_traj[j][scaled_traj[j].shape[0]-time_step:] # before first gap, last time_step points
         temp_input = list(x_input)
@@ -74,6 +74,7 @@ def apply_nn(trajectory):
                 temp_input.extend(yhat.tolist()) # append to the end
                 temp_input=temp_input[1:]
                 corrected_traj[start_predict[j] + i] = [yhat[0][0] * (1 - i/(end_predict[j] - start_predict[j])), yhat[0][1] * (1 - i/(end_predict[j] - start_predict[j]))] # do not inverse scale as this will be inverse scaled in backwards pass
+                # do not do inverse scale here because will do that in backwards pass
                 i=i+1
             else: # when len is time_step predict one more and add that on to the temp_input list
                 x_input = x_input.reshape((1, time_step, 2))
@@ -103,36 +104,38 @@ def apply_nn(trajectory):
                 temp_input.extend(yhat.tolist())
                 corrected_traj[i] = inv_scale_arr([[yhat[0][0] * (i - start_predict[j])/(end_predict[j] - start_predict[j]) + corrected_traj[i][0], yhat[0][1] * (i - start_predict[j])/(end_predict[j] - start_predict[j])+ corrected_traj[i][1]]], min_x, max_x, min_y, max_y)[0]
                 i=i-1
-    
-    '''# old way of fitting the curve
+    '''
+    # old way of fitting the curve
     for j in range(len(start_predict)):
+        x_input = scaled_traj[j][scaled_traj[j].shape[0]-time_step:] # before first gap, last time_step points
+        temp_input = list(x_input)
         i = 0
-        while(i < end_predict[j] - start_predict[j]):
+        while(i <= end_predict[j] - start_predict[j]):
             if(len(temp_input)>time_step): # will always be time_step + 1
                 x_input=np.array(temp_input[1:]) # will remove one so its amount is still time_step
                 x_input = x_input.reshape((1, time_step, 2))
                 yhat = model.predict(x_input, verbose=0)
                 temp_input.extend(yhat.tolist()) # append to the end
                 temp_input=temp_input[1:]
-                corrected_traj[start_predict[j] + i] = scaler.inverse_transform(yhat).tolist()[0] 
+                corrected_traj[start_predict[j] + i] = inv_scale_arr(yhat, min_x, max_x, min_y, max_y)[0]
                 i=i+1
             else: # when len is time_step predict one more and add that on to the temp_input list
                 x_input = x_input.reshape((1, time_step, 2))
                 yhat = model.predict(x_input, verbose=0)
                 temp_input.extend(yhat.tolist())
-                corrected_traj[start_predict[j] + i] = scaler.inverse_transform(yhat).tolist()[0] 
+                corrected_traj[start_predict[j] + i] = inv_scale_arr(yhat, min_x, max_x, min_y, max_y)[0]
                 i=i+1
+    
     '''# old way but reversed
-    '''
     for j in range(len(start_predict)):
+        x_input = np.flipud(scaled_traj[j+1][0:time_step]) # after first gap, first time_step points, will reverse the python list
+        temp_input = list(x_input)
         i = end_predict[j]
         while(i >= start_predict[j]):
             if(len(temp_input)>time_step): # will always be time_step + 1
                 x_input=np.array(temp_input[1:]) # will remove one so its amount is still time_step
                 x_input = x_input.reshape((1, time_step, 2))
                 yhat = model.predict(x_input, verbose=0)
-                print('yhat: ')
-                print(yhat)
                 temp_input.extend(yhat.tolist()) # append to the end
                 temp_input=temp_input[1:]
                 corrected_traj[i] = inv_scale_arr(yhat, min_x, max_x, min_y, max_y)[0]
@@ -140,8 +143,6 @@ def apply_nn(trajectory):
             else: # when len is time_step predict one more and add that on to the temp_input list
                 x_input = x_input.reshape((1, time_step, 2))
                 yhat = model.predict(x_input, verbose=0)
-                print('yhat: ')
-                print(yhat)
                 temp_input.extend(yhat.tolist())
                 corrected_traj[i] = inv_scale_arr(yhat, min_x, max_x, min_y, max_y)[0]
                 i=i-1
@@ -243,13 +244,17 @@ def extract_xy(trajectory):
     arr_x = []
     arr_y = []
     for t in range(len(trajectory)):
-        arr_x.append(trajectory[t][0])
-        arr_y.append(trajectory[t][1])
+            arr_x.append(trajectory[t][0])
+            arr_y.append(trajectory[t][1])
     return arr_x, arr_y
 
 def main():
     print('NN Reconstruction')
     trajectory, perf_traj = load_test()
+    #arr_x,arr_y = extract_xy(trajectory)
+    #plt.scatter(arr_x, arr_y)
+    #plt.show()
+    #exit() 
     corrected_traj = apply_nn(trajectory)
     arr_x,arr_y = extract_xy(corrected_traj)
     print('rms:')

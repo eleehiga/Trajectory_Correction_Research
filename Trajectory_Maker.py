@@ -1,33 +1,13 @@
 import numpy as np
+import os
+import random
+import copy
 import scipy as sp
 from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 from scipy import interpolate
 
-# 1d interpolation
-'''
-#x1 = [100, 88,  67,  50,  35,  27, 18,  11,  8,  5,  4,  2]
-#y1 = [0., 13.99, 27.99, 41.98, 55.98, 69.97, 83.97, 97.97, 111.96, 125.96, 139.95, 153.95]
-#x1 = [10, 100, 200, 310, 400, 500, 300, 0]
-#y1 = [90, 300, 100, 0, 110, 200, 400, 500]
-x1 = [100, 200,10, 310, 400, 500, 300, 0]
-y1 = [300, 100, 90, 0, 110, 200, 400, 500]
 
-# Combine lists into list of tuples
-#points = zip(x1, y1)
-
-# Sort list of tuples by x-value
-#points = sorted(points, key=lambda point: point[0])
-
-# Split list of tuples into two list of x values any y values
-#x1, y1 = zip(*points)
-
-new_length = 500
-new_x = np.linspace(min(x1), max(x1), new_length)
-new_y = sp.interpolate.interp1d(x1, y1, kind='cubic')(new_x)
-
-plt.scatter(new_x, new_y)
-plt.show()
 '''
 #splprep
 points = [(100,300),(200,100),(10,90),(310,0),(400,110),(500,200),(300,400),(0,500)]
@@ -52,3 +32,60 @@ plt.figure()
 plt.plot(out[0], out[1], color='orange')
 plt.plot(data[:,0], data[:,1], 'ob')
 plt.show()
+'''
+# plot a random path with random gaps in it
+# 200 points
+# x and y values 0 to 500 could be
+# random gaps not in beginning or end but elsewhere
+# gaps are about 20 long max
+points_length = 8
+trajectory_length = 500
+edge_protect = 0.05
+max_coord_val = 500
+num_gaps = 7
+max_gap_length = 20
+
+def rand_point():
+    return (max_coord_val*np.random.uniform(0,1), max_coord_val*np.random.uniform(0,1))
+
+def main():
+    points = []
+    for i in range(points_length):
+        points.append(rand_point())
+        # random b-spline anchor points
+    #print(points)
+    data = np.array(points)
+    tck,u = interpolate.splprep(data.transpose(), s=0)
+    unew = np.linspace(0,1,num=trajectory_length,endpoint=True)
+    out = interpolate.splev(unew, tck)
+    # place the gap after the edge_protection amount
+    # set the end of the delete to be +rand from max_gap_length
+    # delete the start and end of gap
+    # make the next gaps not in between the previous gaps and has to be max gap_length away
+    # make array of no_gap_start and no_gap_stop
+    out_prev = copy.deepcopy(out)
+    no_gap_start = []
+    no_gap_stop = []
+    for i in range(num_gaps):
+        del_start = random.randint(edge_protect*trajectory_length,(1-edge_protect)*trajectory_length-max_gap_length)
+        if(len(no_gap_start) > 0):
+            for k in range(len(no_gap_start)):
+                while(del_start > no_gap_start[k] and del_start < no_gap_stop[k]):
+                    del_start = random.randint(edge_protect*trajectory_length,(1-edge_protect)*trajectory_length-max_gap_length)
+        del_stop = del_start+random.randint(max_gap_length/2,max_gap_length)
+        for j in range(del_start, del_stop):
+            out[0][j] = None
+            out[1][j] = None
+        no_gap_start.append(del_start-2*max_gap_length)
+        no_gap_stop.append(del_stop+max_gap_length)
+
+    plt.figure()
+    plt.plot(out[0], out[1], 'og')
+    #plt.plot(data[:,0], data[:,1], 'ob')
+    plt.savefig(os.path.join(os.path.expanduser('~'), 'Documents/TCR_Images', 'fig1.png'))
+    plt.show()
+    plt.plot(out_prev[0], out_prev[1], 'or')
+    plt.show()
+
+if __name__=='__main__':
+    main()

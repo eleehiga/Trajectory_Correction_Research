@@ -7,32 +7,6 @@ from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 from scipy import interpolate
 
-
-'''
-#splprep
-points = [(100,300),(200,100),(10,90),(310,0),(400,110),(500,200),(300,400),(0,500)]
-print(points)
-data = np.array(points)
-
-tck,u = interpolate.splprep(data.transpose(), s=0)
-print('tck: ')
-print(tck)
-#unew = np.arange(0, 1.01, 0.01)
-unew = np.linspace(0,1,num=200,endpoint=True)
-print('unew: ')
-print(unew)
-#leads to redicuously big numbers -> unew = np.array(range(0,500))
-out = interpolate.splev(unew, tck)
-print('out: ')
-print(out) # out is a 2d array with the first array for x values and second for y values
-print('len(out[0]): ')
-print(len(out[0]))
-
-plt.figure()
-plt.plot(out[0], out[1], color='orange')
-plt.plot(data[:,0], data[:,1], 'ob')
-plt.show()
-'''
 # plot a random path with random gaps in it
 # 200 points
 # x and y values 0 to 500 could be

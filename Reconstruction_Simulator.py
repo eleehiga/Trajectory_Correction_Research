@@ -22,7 +22,7 @@ import pandas as pd
 # 7. repeat steps 4 and 5
 # 8. start from step 1 and keep doing this till reach specified amount of trajectories
 
-num_traj= 5 # Dr. T wants 500
+num_traj= 2 # Dr. T wants 500
 offset = 0 # just in case want more runs, set this so ones before not overwritten
 time_step = 10
 min_x = 0
@@ -55,22 +55,23 @@ def rand_trajectory():
     # make the next gaps not in between the previous gaps and has to be max gap_length away
     # make array of no_gap_start and no_gap_stop
     out_prev = copy.deepcopy(out)
-    #no_gap_start = [0, trajectory_length - max_gap_length] # initially nothing at the very end or beginning
-    #no_gap_stop = [max_gap_length, trajectory_length-1]
-    no_gap_start = [] # leave as blank as will have try and catch in main code if errors out
+    no_gap_start = [] # no need to include end lengths here are already have edge protection 
     no_gap_stop = []
     for i in range(num_gaps):
-        del_start = random.randint(edge_protect*trajectory_length,(1-edge_protect)*trajectory_length-max_gap_length)
-        if(len(no_gap_start) > 0):
-            for k in range(len(no_gap_start)):
-                while(del_start > no_gap_start[k] and del_start < no_gap_stop[k]):
-                    del_start = random.randint(edge_protect*trajectory_length,(1-edge_protect)*trajectory_length-max_gap_length)
+        passes = False
+        while(passes == False):
+            passes = True # assume good in the beginning
+            del_start = random.randint(edge_protect*trajectory_length,(1-edge_protect)*trajectory_length-max_gap_length) # -max_gap_length just in case
+            if(len(no_gap_start) > 0):
+                for k in range(len(no_gap_start)):
+                    if(del_start > no_gap_start[k] and del_start < no_gap_stop[k]):
+                        passes = False # if the del_start value is within the gaps
         del_stop = del_start+random.randint(max_gap_length/2,max_gap_length)
         for j in range(del_start, del_stop):
             out[0][j] = None
             out[1][j] = None
         no_gap_start.append(del_start-2*max_gap_length)
-        no_gap_stop.append(del_stop+max_gap_length)
+        no_gap_stop.append(del_stop+1*max_gap_length)
     trajectory = []
     for i in range(len(out[0])):
         trajectory.append([out[0][i], out[1][i]])
@@ -124,7 +125,7 @@ def train_nn(trajectory):
 
     model.fit(X_train,
           y_train,
-          epochs=5
+          epochs=2
           ) # epochs=5000 is the best for forward only
             # 2500 is best for forward and backward
             # 500 is ok
@@ -279,23 +280,19 @@ def main():
     df = pd.DataFrame(columns=['forward rms','forward and backward rms', 'curvature sum'])
     df.to_csv('~/Documents/rms_curvature.csv', index=False)
     for i in range(num_traj):
-        try: # sometimes a randomly created trajectory will cause this to error out
-            trajectory, perf_traj = rand_trajectory()
-            model, scaled_traj, start_predict, end_predict = train_nn(trajectory)
-            forward_traj = forward_nn(trajectory, scaled_traj, start_predict, end_predict, model)
-            for_back_traj = for_back_nn(trajectory, scaled_traj, start_predict, end_predict, model)
-            forward_x, forward_y = extract_xy(forward_traj)
-            plt.scatter(forward_x, forward_y)
-            plt.savefig(os.path.join(os.path.expanduser('~'), 'Documents/F_Images', 'f_im'+str(i+offset)+'.png'))
-            for_back_x, for_back_y = extract_xy(for_back_traj)
-            plt.scatter(for_back_x, for_back_y)
-            plt.savefig(os.path.join(os.path.expanduser('~'), 'Documents/FB_Images', 'fb_im'+str(i+offset)+'.png'))
-            df_tmp = pd.DataFrame([(get_rms(perf_traj, forward_traj), get_rms(perf_traj, for_back_traj), get_curvature_sum(perf_traj))])
-            df_tmp.to_csv('~/Documents/rms_curvature.csv', mode='a', header=False, index=False)
-        except:
-            print('Errored track trying again')
-            i -= 1
-            continue # so try again if error out
+        trajectory, perf_traj = rand_trajectory()
+        model, scaled_traj, start_predict, end_predict = train_nn(trajectory)
+        forward_traj = forward_nn(trajectory, scaled_traj, start_predict, end_predict, model)
+        for_back_traj = for_back_nn(trajectory, scaled_traj, start_predict, end_predict, model)
+        forward_x, forward_y = extract_xy(forward_traj)
+        plt.scatter(forward_x, forward_y)
+        plt.savefig(os.path.join(os.path.expanduser('~'), 'Documents/F_Images', 'f_im'+str(i+offset)+'.png'))
+        for_back_x, for_back_y = extract_xy(for_back_traj)
+        plt.scatter(for_back_x, for_back_y)
+        plt.savefig(os.path.join(os.path.expanduser('~'), 'Documents/FB_Images', 'fb_im'+str(i+offset)+'.png'))
+        plt.clf() # clear the entire figure
+        df_tmp = pd.DataFrame([(get_rms(perf_traj, forward_traj), get_rms(perf_traj, for_back_traj), get_curvature_sum(perf_traj))])
+        df_tmp.to_csv('~/Documents/rms_curvature.csv', mode='a', header=False, index=False)
 
 if __name__ == '__main__':
     main()

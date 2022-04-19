@@ -27,7 +27,6 @@ def main():
     for i in range(points_length):
         points.append(rand_point())
         # random b-spline anchor points
-    #print(points)
     data = np.array(points)
     tck,u = interpolate.splprep(data.transpose(), s=0)
     unew = np.linspace(0,1,num=trajectory_length,endpoint=True)
@@ -55,11 +54,19 @@ def main():
 
     plt.figure()
     plt.plot(out[0], out[1], 'og')
-    #plt.plot(data[:,0], data[:,1], 'ob')
-    plt.savefig(os.path.join(os.path.expanduser('~'), 'Documents/TCR_Images', 'fig1.png'))
+    #plt.savefig(os.path.join(os.path.expanduser('~'), 'Documents/TCR_Images', 'fig1.png'))
     plt.show()
-    plt.plot(out_prev[0], out_prev[1], 'or')
-    plt.show()
+    #plt.plot(out_prev[0], out_prev[1], 'or')
+    #plt.show()
+    dx_dt = np.gradient(out_prev[0])
+    dy_dt = np.gradient(out_prev[1])
+    ds_dt = np.sqrt(dx_dt * dx_dt + dy_dt * dy_dt)
+    d2s_dt2 = np.gradient(ds_dt)
+    d2x_dt2 = np.gradient(dx_dt)
+    d2y_dt2 = np.gradient(dy_dt)
+    curvature = np.abs(d2x_dt2 * dy_dt - dx_dt * d2y_dt2) / (dx_dt * dx_dt + dy_dt * dy_dt)**1.5
+    print('curvature sum: ')
+    print(np.sum(curvature))
 
 if __name__=='__main__':
     main()

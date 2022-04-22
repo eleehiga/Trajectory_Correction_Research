@@ -277,7 +277,7 @@ def extract_xy(trajectory):
 def main():
     print('Reconstruction Simulator')
     # uncomment if want to reset the csv file
-    df = pd.DataFrame(columns=['forward rms','forward and backward rms', 'curvature sum'])
+    df = pd.DataFrame(columns=['forward rms','forward and backward rms', 'curvature sum', 'gaps amount'])
     df.to_csv('~/Documents/rms_curvature.csv', index=False)
     for i in range(num_traj):
         trajectory, perf_traj = rand_trajectory()
@@ -291,7 +291,7 @@ def main():
         plt.scatter(for_back_x, for_back_y)
         plt.savefig(os.path.join(os.path.expanduser('~'), 'Documents/FB_Images', 'fb_im'+str(i+offset)+'.png'))
         plt.clf() # clear the entire figure
-        df_tmp = pd.DataFrame([(get_rms(perf_traj, forward_traj), get_rms(perf_traj, for_back_traj), get_curvature_sum(perf_traj))])
+        df_tmp = pd.DataFrame([(get_rms(perf_traj, forward_traj), get_rms(perf_traj, for_back_traj), get_curvature_sum(perf_traj), num_gaps)])
         df_tmp.to_csv('~/Documents/rms_curvature.csv', mode='a', header=False, index=False)
 
 if __name__ == '__main__':

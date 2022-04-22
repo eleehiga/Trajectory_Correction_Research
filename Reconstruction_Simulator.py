@@ -22,7 +22,7 @@ import pandas as pd
 # 7. repeat steps 4 and 5
 # 8. start from step 1 and keep doing this till reach specified amount of trajectories
 
-num_traj= 2 # Dr. T wants 500
+num_traj= 100 # Dr. T wants 500 in total
 offset = 0 # just in case want more runs, set this so ones before not overwritten
 time_step = 10
 min_x = 0
@@ -34,7 +34,8 @@ points_length = 8
 trajectory_length = 500
 edge_protect = 0.05
 max_coord_val = 500
-num_gaps = 7
+num_gaps = 1
+max_gaps = 5
 max_gap_length = 20
 
 def rand_point():
@@ -125,7 +126,7 @@ def train_nn(trajectory):
 
     model.fit(X_train,
           y_train,
-          epochs=2
+          epochs=2500
           ) # epochs=5000 is the best for forward only
             # 2500 is best for forward and backward
             # 500 is ok
@@ -279,20 +280,24 @@ def main():
     # uncomment if want to reset the csv file
     df = pd.DataFrame(columns=['forward rms','forward and backward rms', 'curvature sum', 'gaps amount'])
     df.to_csv('~/Documents/rms_curvature.csv', index=False)
-    for i in range(num_traj):
-        trajectory, perf_traj = rand_trajectory()
-        model, scaled_traj, start_predict, end_predict = train_nn(trajectory)
-        forward_traj = forward_nn(trajectory, scaled_traj, start_predict, end_predict, model)
-        for_back_traj = for_back_nn(trajectory, scaled_traj, start_predict, end_predict, model)
-        forward_x, forward_y = extract_xy(forward_traj)
-        plt.scatter(forward_x, forward_y)
-        plt.savefig(os.path.join(os.path.expanduser('~'), 'Documents/F_Images', 'f_im'+str(i+offset)+'.png'))
-        for_back_x, for_back_y = extract_xy(for_back_traj)
-        plt.scatter(for_back_x, for_back_y)
-        plt.savefig(os.path.join(os.path.expanduser('~'), 'Documents/FB_Images', 'fb_im'+str(i+offset)+'.png'))
-        plt.clf() # clear the entire figure
-        df_tmp = pd.DataFrame([(get_rms(perf_traj, forward_traj), get_rms(perf_traj, for_back_traj), get_curvature_sum(perf_traj), num_gaps)])
-        df_tmp.to_csv('~/Documents/rms_curvature.csv', mode='a', header=False, index=False)
+    for j in range(1,max_gaps+1):
+        for i in range(num_traj):
+            num_gaps = j
+            trajectory, perf_traj = rand_trajectory()
+            model, scaled_traj, start_predict, end_predict = train_nn(trajectory)
+            forward_traj = forward_nn(trajectory, scaled_traj, start_predict, end_predict, model)
+            for_back_traj = for_back_nn(trajectory, scaled_traj, start_predict, end_predict, model)
+            forward_x, forward_y = extract_xy(forward_traj)
+            plt.scatter(forward_x, forward_y)
+            plt.savefig(os.path.join(os.path.expanduser('~'), 'Documents/F_Images', 'f_im'+str(i+offset)+'.png'))
+            for_back_x, for_back_y = extract_xy(for_back_traj)
+            plt.scatter(for_back_x, for_back_y)
+            plt.savefig(os.path.join(os.path.expanduser('~'), 'Documents/FB_Images', 'fb_im'+str(i+offset)+'.png'))
+            plt.clf() # clear the entire figure
+            df_tmp = pd.DataFrame([(get_rms(perf_traj, forward_traj), get_rms(perf_traj, for_back_traj), get_curvature_sum(perf_traj), num_gaps)])
+            df_tmp.to_csv('~/Documents/rms_curvature.csv', mode='a', header=False, index=False)
+            print("gaps, num traj")
+            print(num_gaps, i)
 
 if __name__ == '__main__':
     main()

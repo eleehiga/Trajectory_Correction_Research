@@ -25,10 +25,10 @@ import pandas as pd
 num_traj= 1 # Dr. T wants 500 in total
 offset = 0 # just in case want more runs, set this so ones before not overwritten
 time_step = 10
-gmin_x = 0
-gmax_x = 0
-gmin_y = 0
-gmax_y = 0
+min_x = 0
+max_x = 0
+min_y = 0
+max_y = 0
 
 points_length = 8
 trajectory_length = 500
@@ -82,17 +82,11 @@ def rand_trajectory():
     return trajectory, perf_trajectory
 
 def train_nn(trajectory):
+    global min_x
+    global max_x
+    global min_y
+    global max_y
     min_x, max_x, min_y, max_y = min_max_from_nones(trajectory) # when I put this line outside the function, it will not be called
-    print(min_x, max_x, min_y, max_y)
-    global gmin_x
-    gmin_x = min_x
-    global gmin_y
-    gmin_y = min_y
-    global gmax_x
-    gmax_x = max_x
-    global gmax_y
-    gmax_y = max_y
-    print(gmin_x, gmax_x, gmin_y, gmax_y)
     start_predict = [] # start predicting there there are None in data
     end_predict = []
     for i in range(len(trajectory)):
@@ -143,12 +137,6 @@ def train_nn(trajectory):
     return model, scaled_traj, start_predict, end_predict # use this model and broken up scaled trajectory for evaluation
 
 def forward_nn(trajectory, scaled_traj, start_predict, end_predict, model):
-    print(gmin_x, gmax_x, gmin_y, gmax_y)
-    min_x = gmin_x 
-    min_y = gmin_y
-    max_x = gmax_x
-    max_y = gmax_y
-    print(min_x, max_x, min_y, max_y)
     corrected_traj = copy.deepcopy(trajectory)
     # old way of fitting the curve
     for j in range(len(start_predict)):
@@ -173,10 +161,6 @@ def forward_nn(trajectory, scaled_traj, start_predict, end_predict, model):
     return corrected_traj # return forward corrected array
 
 def for_back_nn(trajectory, scaled_traj, start_predict, end_predict, model):
-    min_x = gmin_x 
-    min_y = gmin_y
-    max_x = gmax_x
-    max_y = gmax_y
     corrected_traj = copy.deepcopy(trajectory)
     for j in range(len(start_predict)):
         x_input = scaled_traj[j][scaled_traj[j].shape[0]-time_step:] # before first gap, last time_step points
@@ -304,15 +288,24 @@ def main():
         for i in range(num_traj):
             num_gaps = j
             trajectory, perf_traj = rand_trajectory()
+            traj_x, traj_y = extract_xy(trajectory)
+            plt.scatter(traj_x, traj_y)
+            plt.savefig(os.path.join(os.path.expanduser('~'), 'Documents/T_Images', 'f_im'+str(j+offset)+'_'+str(i+offset)+'.png'))
+            plt.clf() # clear the entire figure
+            perf_x, perf_y = extract_xy(perf_traj)
+            plt.scatter(perf_x, perf_y)
+            plt.savefig(os.path.join(os.path.expanduser('~'), 'Documents/P_Images', 'f_im'+str(j+offset)+'_'+str(i+offset)+'.png'))
+            plt.clf() # clear the entire figure
             model, scaled_traj, start_predict, end_predict = train_nn(trajectory)
             forward_traj = forward_nn(trajectory, scaled_traj, start_predict, end_predict, model)
             for_back_traj = for_back_nn(trajectory, scaled_traj, start_predict, end_predict, model)
             forward_x, forward_y = extract_xy(forward_traj)
             plt.scatter(forward_x, forward_y)
-            plt.savefig(os.path.join(os.path.expanduser('~'), 'Documents/F_Images', 'f_im'+str(i+offset)+'.png'))
+            plt.savefig(os.path.join(os.path.expanduser('~'), 'Documents/F_Images', 'f_im'+str(j+offset)+'_'+str(i+offset)+'.png'))
+            plt.clf() # clear the entire figure
             for_back_x, for_back_y = extract_xy(for_back_traj)
             plt.scatter(for_back_x, for_back_y)
-            plt.savefig(os.path.join(os.path.expanduser('~'), 'Documents/FB_Images', 'fb_im'+str(i+offset)+'.png'))
+            plt.savefig(os.path.join(os.path.expanduser('~'), 'Documents/FB_Images', 'f_im'+str(j+offset)+'_'+str(i+offset)+'.png'))
             plt.clf() # clear the entire figure
             df_tmp = pd.DataFrame([(get_rms(perf_traj, forward_traj), get_rms(perf_traj, for_back_traj), get_curvature_sum(perf_traj), num_gaps)])
             df_tmp.to_csv('~/Documents/rms_curvature.csv', mode='a', header=False, index=False)

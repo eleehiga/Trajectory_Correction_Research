@@ -22,13 +22,13 @@ import pandas as pd
 # 7. repeat steps 4 and 5
 # 8. start from step 1 and keep doing this till reach specified amount of trajectories
 
-num_traj= 100 # Dr. T wants 500 in total
+num_traj= 1 # Dr. T wants 500 in total
 offset = 0 # just in case want more runs, set this so ones before not overwritten
 time_step = 10
-min_x = 0
-max_x = 0
-min_y = 0
-max_y = 0
+gmin_x = 0
+gmax_x = 0
+gmin_y = 0
+gmax_y = 0
 
 points_length = 8
 trajectory_length = 500
@@ -83,6 +83,16 @@ def rand_trajectory():
 
 def train_nn(trajectory):
     min_x, max_x, min_y, max_y = min_max_from_nones(trajectory) # when I put this line outside the function, it will not be called
+    print(min_x, max_x, min_y, max_y)
+    global gmin_x
+    gmin_x = min_x
+    global gmin_y
+    gmin_y = min_y
+    global gmax_x
+    gmax_x = max_x
+    global gmax_y
+    gmax_y = max_y
+    print(gmin_x, gmax_x, gmin_y, gmax_y)
     start_predict = [] # start predicting there there are None in data
     end_predict = []
     for i in range(len(trajectory)):
@@ -122,17 +132,23 @@ def train_nn(trajectory):
         optimizer=opt,
         metrics=['accuracy'],
     )
-    model.summary()
+    #model.summary()
 
     model.fit(X_train,
           y_train,
-          epochs=2500
+          epochs=2
           ) # epochs=5000 is the best for forward only
             # 2500 is best for forward and backward
             # 500 is ok
     return model, scaled_traj, start_predict, end_predict # use this model and broken up scaled trajectory for evaluation
 
 def forward_nn(trajectory, scaled_traj, start_predict, end_predict, model):
+    print(gmin_x, gmax_x, gmin_y, gmax_y)
+    min_x = gmin_x 
+    min_y = gmin_y
+    max_x = gmax_x
+    max_y = gmax_y
+    print(min_x, max_x, min_y, max_y)
     corrected_traj = copy.deepcopy(trajectory)
     # old way of fitting the curve
     for j in range(len(start_predict)):
@@ -157,6 +173,10 @@ def forward_nn(trajectory, scaled_traj, start_predict, end_predict, model):
     return corrected_traj # return forward corrected array
 
 def for_back_nn(trajectory, scaled_traj, start_predict, end_predict, model):
+    min_x = gmin_x 
+    min_y = gmin_y
+    max_x = gmax_x
+    max_y = gmax_y
     corrected_traj = copy.deepcopy(trajectory)
     for j in range(len(start_predict)):
         x_input = scaled_traj[j][scaled_traj[j].shape[0]-time_step:] # before first gap, last time_step points

@@ -6,6 +6,9 @@ import scipy as sp
 from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 from scipy import interpolate
+#from tensorflow.keras.models import Sequential
+#from tensorflow.keras.layers import Dense, Dropout, LSTM
+#import tensorflow as tf
 
 # plot a random path with random gaps in it
 # 200 points
@@ -22,7 +25,46 @@ max_gap_length = 20
 def rand_point():
     return (max_coord_val*np.random.uniform(0,1), max_coord_val*np.random.uniform(0,1))
 
+def create_model():
+    model = Sequential()
+    time_step=10 # how many points previously to use to predict
+
+    # reshape input to be [samples, time steps, features] which is required for LSTM
+    units = 3 # before 3 # for nodes in network
+    model = Sequential()
+    model.add(LSTM(units, input_shape=(time_step,2), return_sequences=True)) # no activation as we are not returning a binary value
+    model.add(LSTM(units, return_sequences=True))
+    model.add(LSTM(units))
+    model.add(Dense(2)) # LSTM with return_sequence=False will return just one output so does Dense have to be 2
+
+    print('from create model')
+    print(model)
+    opt = tf.keras.optimizers.Adam(lr=0.001, decay=1e-6)
+    model.compile(
+        loss='mean_squared_error',
+        optimizer=opt,
+        metrics=['accuracy'],
+    )
+    model.summary()
+    return model
+
+def take_model(model):
+    print('from take model')
+    print(model)
+    opt = tf.keras.optimizers.Adam(lr=0.001, decay=1e-6)
+    model.compile(
+        loss='mean_squared_error',
+        optimizer=opt,
+        metrics=['accuracy'],
+    )
+    model.summary()
+
+def test_copy(trajectory):
+    corrected_traj = copy.deepcopy(trajectory)
+    return corrected_traj
+
 def main():
+    '''
     points = []
     for i in range(points_length):
         points.append(rand_point())
@@ -67,6 +109,11 @@ def main():
     curvature = np.abs(d2x_dt2 * dy_dt - dx_dt * d2y_dt2) / (dx_dt * dx_dt + dy_dt * dy_dt)**1.5
     print('curvature sum: ')
     print(np.sum(curvature))
+    '''
+    #model = create_model()
+    #take_model(model)
+    corrected_traj = test_copy(np.array([1,2,3,4,5]))
+    print(corrected_traj)
 
 if __name__=='__main__':
     main()

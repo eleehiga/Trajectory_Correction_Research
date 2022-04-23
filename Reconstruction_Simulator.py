@@ -130,8 +130,8 @@ def train_nn(trajectory):
 
     model.fit(X_train,
           y_train,
-          verbose=2500,
-          epochs=2
+          verbose=2,
+          epochs=2500
           ) # epochs=5000 is the best for forward only
             # 2500 is best for forward and backward
             # 500 is ok

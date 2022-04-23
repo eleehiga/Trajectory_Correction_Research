@@ -22,7 +22,7 @@ import pandas as pd
 # 7. repeat steps 4 and 5
 # 8. start from step 1 and keep doing this till reach specified amount of trajectories
 
-num_traj= 1 # Dr. T wants 500 in total
+num_traj= 100 # Dr. T wants 500 in total
 offset = 0 # just in case want more runs, set this so ones before not overwritten
 time_step = 10
 min_x = 0
@@ -130,10 +130,13 @@ def train_nn(trajectory):
 
     model.fit(X_train,
           y_train,
+          verbose=2500,
           epochs=2
           ) # epochs=5000 is the best for forward only
             # 2500 is best for forward and backward
             # 500 is ok
+    # verbose=2 just show one line per epoch
+    # verbose=0 does not allow any print statements
     return model, scaled_traj, start_predict, end_predict # use this model and broken up scaled trajectory for evaluation
 
 def forward_nn(trajectory, scaled_traj, start_predict, end_predict, model):
@@ -284,6 +287,7 @@ def main():
     # uncomment if want to reset the csv file
     df = pd.DataFrame(columns=['forward rms','forward and backward rms', 'curvature sum', 'gaps amount'])
     df.to_csv('~/Documents/rms_curvature.csv', index=False)
+    global num_gaps # update here changes the global
     for j in range(1,max_gaps+1):
         for i in range(num_traj):
             num_gaps = j

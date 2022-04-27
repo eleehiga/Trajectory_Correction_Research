@@ -22,7 +22,7 @@ import pandas as pd
 # 7. repeat steps 4 and 5
 # 8. start from step 1 and keep doing this till reach specified amount of trajectories
 
-num_traj= 100 # Dr. T wants 500 in total
+num_traj= 10 # Dr. T wants 500 in total
 offset = 0 # just in case want more runs, set this so ones before not overwritten
 time_step = 10
 min_x = 0
@@ -285,10 +285,10 @@ def extract_xy(trajectory):
 def main():
     print('Reconstruction Simulator')
     # uncomment if want to reset the csv file
-    df = pd.DataFrame(columns=['forward rms','forward and backward rms', 'curvature sum', 'gaps amount'])
-    df.to_csv('~/Documents/rms_curvature.csv', index=False)
+    # df = pd.DataFrame(columns=['forward rms','forward and backward rms', 'curvature sum', 'gaps amount'])
+    # df.to_csv('~/Documents/rms_curvature.csv', index=False)
     global num_gaps # update here changes the global
-    for j in range(1,max_gaps+1):
+    for j in range(2,max_gaps+1): # change to start from 1 gap later
         for i in range(num_traj):
             num_gaps = j
             trajectory, perf_traj = rand_trajectory()
